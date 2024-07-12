@@ -147,6 +147,23 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function() {
+            // Function to set the radio button based on localStorage
+            function setRadioButton() {
+                var aircraftType = localStorage.getItem('aircraft_type');
+                if (aircraftType) {
+                    $(`input[name='aircraft_type'][value='${aircraftType}']`).prop('checked', true);
+                }
+            }
+
+            // Call the function to set radio button on page load
+            setRadioButton();
+
+            // Save selected radio button to localStorage on change
+            $('input[name="aircraft_type"]').change(function() {
+                var selectedValue = $(this).val();
+                localStorage.setItem('aircraft_type', selectedValue);
+            });
+
             $('#demandForm').submit(function(event) {
                 event.preventDefault();
                 $.ajax({
@@ -169,7 +186,6 @@
                             </tr>`;
                             $(tableBody).append(row);
                         });
-                        window.location.reload();
                     },
                     error: function(error) {
                         console.log('Error:', error);
