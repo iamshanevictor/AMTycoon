@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Airline Demand Calculator</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        button.delete-btn {
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Airline Demand Calculator</h1>
+    <form id="demandForm">
+        <label for="airport_name">Airport Name:</label><br>
+        <input type="text" id="airport_name" name="airport_name" required><br><br>
+        <label for="aircraft_type">Aircraft Type:</label><br>
+        <input type="radio" id="A380-800" name="aircraft_type" value="A380-800" checked>
+        <label for="A380-800">A380-800</label><br>
+        <input type="radio" id="A350-1000" name="aircraft_type" value="A350-1000">
+        <label for="A350-1000">A350-1000</label><br><br>
+        <label for="flight_duration">Flight Duration:</label><br>
+        <input type="radio" id="24" name="flight_duration" value="24" checked>
+        <label for="24">24 hours</label><br>
+        <input type="radio" id="12" name="flight_duration" value="12">
+        <label for="12">12 hours</label><br>
+        <input type="radio" id="8" name="flight_duration" value="8">
+        <label for="8">8 hours</label><br><br>
+        <label for="economy">Economy Demand:</label><br>
+        <input type="number" id="economy" name="economy" required><br><br>
+        <label for="business">Business Demand:</label><br>
+        <input type="number" id="business" name="business" required><br><br>
+        <label for="first">First Demand:</label><br>
+        <input type="number" id="first" name="first" required><br><br>
+        <label for="cargo">Cargo Demand:</label><br>
+        <input type="number" id="cargo" name="cargo" required><br><br>
+        <label>Select Airline:</label><br>
+        <input type="radio" id="Air Minatozaki" name="table_selection" value="Air Minatozaki" checked>
+        <label for="Air Minatozaki">Air Minatozaki</label><br>
+        <input type="radio" id="Zenithal Airlines" name="table_selection" value="Zenithal Airlines">
+        <label for="Zenithal Airlines">Zenithal Airlines</label><br><br>
+        <input type="submit" value="Calculate">
+    </form>
+
+    <h2>Previous Calculations - Air Minatozaki</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Airport Name</th>
+                <th>Aircraft Type</th>
+                <th>Flight Duration</th>
+                <th>Economy</th>
+                <th>Business</th>
+                <th>First</th>
+                <th>Cargo</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="air-minatozaki-table">
+            {% for entry in air_minatozaki_data %}
+            <tr data-id="{{ entry['id'] }}">
+                <td>{{ entry['airport_name'] }}</td>
+                <td>{{ entry['aircraft_type'] }}</td>
+                <td>{{ entry['flight_duration'] }}</td>
+                <td>{{ entry['economy'] }}</td>
+                <td>{{ entry['business'] }}</td>
+                <td>{{ entry['first'] }}</td>
+                <td>{{ entry['cargo'] }}</td>
+                <td><button class="delete-btn">Delete</button></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Previous Calculations - Zenithal Airlines</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Airport Name</th>
+                <th>Aircraft Type</th>
+                <th>Flight Duration</th>
+                <th>Economy</th>
+                <th>Business</th>
+                <th>First</th>
+                <th>Cargo</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="zenithal-airlines-table">
+            {% for entry in zenithal_airlines_data %}
+            <tr data-id="{{ entry['id'] }}">
+                <td>{{ entry['airport_name'] }}</td>
+                <td>{{ entry['aircraft_type'] }}</td>
+                <td>{{ entry['flight_duration'] }}</td>
+                <td>{{ entry['economy'] }}</td>
+                <td>{{ entry['business'] }}</td>
+                <td>{{ entry['first'] }}</td>
+                <td>{{ entry['cargo'] }}</td>
+                <td><button class="delete-btn">Delete</button></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <script>
+        // Function to save selected radio button to localStorage
+        function saveSelectedRadio() {
+            const selectedAircraftType = document.querySelector('input[name="aircraft_type"]:checked').id;
+            localStorage.setItem('selectedAircraftType', selectedAircraftType);
+
+            const selectedTable = document.querySelector('input[name="table_selection"]:checked').id;
+            localStorage.setItem('selectedTable', selectedTable);
+
+            const selectedDuration = document.querySelector('input[name="flight_duration"]:checked').id;
+            localStorage.setItem('selectedDuration', selectedDuration);
+        }
+
+        // Function to load selected radio button from localStorage
+        function loadSelectedRadio() {
+            const selectedAircraftType = localStorage.getItem('selectedAircraftType');
+            const selectedTable = localStorage.getItem('selectedTable');
+            const selectedDuration = localStorage.getItem('selectedDuration');
+
+            if (selectedAircraftType) {
+                document.getElementById(selectedAircraftType).checked = true;
+            }
+
+            if (selectedTable) {
+                document.getElementById(selectedTable).checked = true;
+            }
+
+            if (selectedDuration) {
+                document.getElementById(selectedDuration).checked = true;
+            }
+        }
+
+        // Load selected radio buttons on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSelectedRadio();
+        });
+
+        // Handle form submission
+        document.getElementById('demandForm').addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevent the form from submitting the traditional way
+            saveSelectedRadio(); // Save selected radio buttons to localStorage
+
+            const formData = new FormData(this);
+
+            fetch('/calculate', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                window.location.reload();
+                const selectedTable = document.querySelector('input[name="table_selection"]:checked').value;
+                const newRow = document.createElement('tr');
+                newRow.setAttribute('data-id', data['id']);
+
+                newRow.innerHTML = `
+                    <td>${formData.get('airport_name')}</td>
+                    <td>${formData.get('aircraft_type')}</td>
+                    <td>${formData.get('flight_duration')}</td>
+                    <td>${formData.get('economy')}</td>
+                    <td>${formData.get('business')}</td>
+                    <td>${formData.get('first')}</td>
+                    <td>${formData.get('cargo')}</td>
+                    <td><button class="delete-btn">Delete</button></td>
+                `;
+
+                if (selectedTable === 'Air Minatozaki') {
+                    document.getElementById('air-minatozaki-table').appendChild(newRow);
+                } else if (selectedTable === 'Zenithal Airlines') {
+                    document.getElementById('zenithal-airlines-table').appendChild(newRow);
+                }
+
+                document.getElementById('demandForm').reset();
+
+                // Reload the page after adding new calculation
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        // Handle deletion button click
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('delete-btn')) {
+                const row = e.target.closest('tr');
+                const id = row.getAttribute('data-id');
+
+                fetch(`/delete/${id}`, {
+                    method: 'POST',
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        row.remove();
+                    } else {
+                        console.error('Delete request failed:', data);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            }
+        });
+    </script>
+</body>
+</html>

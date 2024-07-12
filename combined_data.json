@@ -1,0 +1,45 @@
+{
+    "Table1": [],
+    "Table2": [
+        {
+            "Airport Name": "LOP",
+            "Aircraft Type": "A380-800",
+            "Economy": 853,
+            "Business": 0,
+            "First": 0,
+            "Cargo": 0
+        },
+        {
+            "Airport Name": "LOP 2",
+            "Aircraft Type": "A380-800",
+            "Economy": 670,
+            "Business": 39,
+            "First": 1,
+            "Cargo": 18
+        },
+        {
+            "Airport Name": "LOP",
+            "Aircraft Type": "A350-1000",
+            "Economy": 522,
+            "Business": 0,
+            "First": 0,
+            "Cargo": 0
+        },
+        {
+            "Airport Name": "LOP 2",
+            "Aircraft Type": "A350-1000",
+            "Economy": 522,
+            "Business": 39,
+            "First": 1,
+            "Cargo": 18
+        },
+        {
+            "Airport Name": "LOP 3",
+            "Aircraft Type": "A350-1000",
+            "Economy": 479,
+            "Business": 0,
+            "First": 0,
+            "Cargo": 0
+        }
+    ]
+}
