@@ -8,15 +8,15 @@ app = Flask(__name__)
 MAX_CAPACITY = {
     "A380-800": {
         "Economy": 853,
-        "Business": 80,  # Adjust as needed
-        "First": 10,     # Adjust as needed
-        "Cargo": 200     # Adjust as needed
+        "Business": 80,
+        "First": 10,
+        "Cargo": 200
     },
     "A350-1000": {
         "Economy": 522,
-        "Business": 60,  # Adjust as needed
-        "First": 8,      # Adjust as needed
-        "Cargo": 150     # Adjust as needed
+        "Business": 60,
+        "First": 8,
+        "Cargo": 150
     }
 }
 
@@ -52,61 +52,97 @@ def init_db():
                 first INTEGER NOT NULL,
                 cargo INTEGER NOT NULL,
                 table_name TEXT NOT NULL,
-                flight_duration TEXT NOT NULL  -- Ensure flight_duration is included
+                flight_duration TEXT NOT NULL
             )
         ''')
         db.commit()
 
 init_db()
 
-@app.route('/')
-def index():
+# Function to fetch paginated data
+def fetch_paginated_data(table_name, page, sort_by):
     db = get_db()
     cursor = db.cursor()
-    cursor.execute('SELECT * FROM calculations WHERE table_name = "Air Minatozaki" ORDER BY id ASC')
-    air_minatozaki_data = cursor.fetchall()
-    
-    cursor.execute('SELECT * FROM calculations WHERE table_name = "Zenithal Airlines" ORDER BY id ASC')
-    zenithal_airlines_data = cursor.fetchall()
-    
-    return render_template('index.html', 
+
+    offset = (page - 1) * 10
+    if sort_by == 'name_asc':
+        cursor.execute(f'SELECT * FROM calculations WHERE table_name = ? ORDER BY airport_name ASC LIMIT 10 OFFSET ?', (table_name, offset))
+    elif sort_by == 'name_desc':
+        cursor.execute(f'SELECT * FROM calculations WHERE table_name = ? ORDER BY airport_name DESC LIMIT 10 OFFSET ?', (table_name, offset))
+    elif sort_by == 'economy_asc':
+        cursor.execute(f'SELECT * FROM calculations WHERE table_name = ? ORDER BY economy ASC LIMIT 10 OFFSET ?', (table_name, offset))
+    elif sort_by == 'economy_desc':
+        cursor.execute(f'SELECT * FROM calculations WHERE table_name = ? ORDER BY economy DESC LIMIT 10 OFFSET ?', (table_name, offset))
+    else:
+        cursor.execute(f'SELECT * FROM calculations WHERE table_name = ? LIMIT 10 OFFSET ?', (table_name, offset))
+
+    return cursor.fetchall()
+
+@app.route('/')
+def index():
+    page = request.args.get('page', 1, type=int)
+    sort_by = request.args.get('sort_by', None, type=str)
+
+    db = get_db()
+    cursor = db.cursor()
+
+    # Fetch data for Air Minatozaki
+    air_minatozaki_data = fetch_paginated_data('Air Minatozaki', page, sort_by)
+
+    # Fetch data for Zenithal Airlines
+    zenithal_airlines_data = fetch_paginated_data('Zenithal Airlines', page, sort_by)
+
+    return render_template('index.html',
                            air_minatozaki_data=air_minatozaki_data,
-                           zenithal_airlines_data=zenithal_airlines_data)
+                           zenithal_airlines_data=zenithal_airlines_data,
+                           page=page, sort_by=sort_by)
 
 @app.route('/calculate', methods=['POST'])
 def calculate():
     airport_name = request.form['airport_name']
     aircraft_type = request.form['aircraft_type']
+    economy = int(request.form['economy'])
+    business = int(request.form['business'])
+    first = int(request.form['first'])
+    cargo = int(request.form['cargo'])
+    table_selection = request.form['table_selection']
     flight_duration = request.form['flight_duration']
 
-    if flight_duration == '12':
-        division_factor = 4
-    elif flight_duration == '8':
-        division_factor = 8
-    else:
-        division_factor = 2  # Default to 24-hour flight
-
-    economy = int(request.form['economy']) // division_factor
-    business = int(request.form['business']) // division_factor
-    first = int(request.form['first']) // division_factor
-    cargo = int(request.form['cargo']) // division_factor
-    table_selection = request.form['table_selection']
-
     max_capacity = MAX_CAPACITY.get(aircraft_type, MAX_CAPACITY["A380-800"])
-
+    max_economy_capacity = max_capacity["Economy"]
+    num_aircraft_economy = math.ceil(economy / max_economy_capacity)
+    remaining_economy = economy
     results = []
 
-    for i in range(1):  # Assuming one result per calculation
-        result = {
-            "Airport Name": airport_name,
-            "Aircraft Type": aircraft_type,
-            "Economy": economy,
-            "Business": business,
-            "First": first,
-            "Cargo": cargo,
-            "Table Name": table_selection,
-            "Flight Duration": flight_duration
-        }
+    for i in range(num_aircraft_economy):
+        if remaining_economy > 0:
+            eco = min(remaining_economy, max_economy_capacity)
+            remaining_economy -= eco
+        else:
+            eco = 0
+
+        if i == num_aircraft_economy - 1:
+            result = {
+                "Airport Name": f"{airport_name} {i + 1}" if i > 0 else airport_name,
+                "Aircraft Type": aircraft_type,
+                "Economy": eco,
+                "Business": business,
+                "First": first,
+                "Cargo": cargo,
+                "Table Name": table_selection,
+                "Flight Duration": flight_duration
+            }
+        else:
+            result = {
+                "Airport Name": f"{airport_name} {i + 1}" if i > 0 else airport_name,
+                "Aircraft Type": aircraft_type,
+                "Economy": eco,
+                "Business": 0,
+                "First": 0,
+                "Cargo": 0,
+                "Table Name": table_selection,
+                "Flight Duration": flight_duration
+            }
 
         results.append(result)
 
